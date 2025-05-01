@@ -68,7 +68,6 @@ class Build : NukeBuild
             DotNetTasks.DotNetBuild(_ => [_
             .SetProjectFile(Solution)
             .SetConfiguration(Configuration)
-            .SetNoRestore(true) // Force use of already restored packages.
             .When(_ => IsServerBuild, _ => _
                 .EnableDeterministic())],
             degreeOfParallelism: 8);

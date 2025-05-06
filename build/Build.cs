@@ -16,6 +16,7 @@ using static Nuke.Common.IO.PathConstruction;
 [AzurePipelines("CI",
     AzurePipelinesImage.WindowsLatest,
     InvokedTargets = new[] { nameof(CI) },
+    NonEntryTargets = new[] { nameof(Restore), nameof(Compile), nameof(Pack) },
     LargeFileStorage = true)]
 class Build : NukeBuild
 {
@@ -42,6 +43,10 @@ class Build : NukeBuild
                 .SetProject(Solution)
                 .SetConfiguration(Configuration)
             );
+
+            var binOutput = RootDirectory / "bin";
+            Log.Information($"Deleting {binOutput}");
+            binOutput.DeleteDirectory();
         });
 
     Target Restore => _ => _
@@ -52,8 +57,8 @@ class Build : NukeBuild
                 .SetConfigFile(RootDirectory / "NuGet.Config")
             );
 
-            Log.Information("Contents of NukeAdoPipelineTest/bin directory after restore:");
-            foreach (var file in (RootDirectory / "NukeAdoPipelineTest" / "bin").GlobFiles("**/*"))
+            Log.Information("Contents of bin directory after restore:");
+            foreach (var file in (RootDirectory / "bin").GlobFiles("**/*"))
                 Log.Information(file.ToString());
         });
 
@@ -64,12 +69,13 @@ class Build : NukeBuild
             DotNetTasks.DotNetBuild(_ => [_
             .SetProjectFile(Solution)
             .SetConfiguration(Configuration)
+            .SetNoRestore(true) // Force use of already restored packages.
             .When(_ => IsServerBuild, _ => _
                 .EnableDeterministic())],
             degreeOfParallelism: 8);
 
-            Log.Information("Contents of NukeAdoPipelineTest/bin directory after compile:");
-            foreach (var file in (RootDirectory / "NukeAdoPipelineTest" / "bin").GlobFiles("**/*"))
+            Log.Information("Contents of bin directory after compile:");
+            foreach (var file in (RootDirectory / "bin").GlobFiles("**/*"))
                 Log.Information(file.ToString());
         });
 
@@ -78,8 +84,8 @@ class Build : NukeBuild
         .Produces(NugetDirectory / "*.nupkg")
         .Executes(() =>
         {
-            Log.Information("Contents of NukeAdoPipelineTest/bin directory before pack:");
-            foreach (var file in (RootDirectory / "NukeAdoPipelineTest" / "bin").GlobFiles("**/*"))
+            Log.Information("Contents of bin directory before pack:");
+            foreach (var file in (RootDirectory / "bin").GlobFiles("**/*"))
                 Log.Information(file.ToString());
 
             string BuildId = AzurePipelines.Instance?.BuildId.ToString() ?? "0";

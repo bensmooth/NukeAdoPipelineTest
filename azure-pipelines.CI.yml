@@ -21,8 +21,8 @@ stages:
     pool:
       vmImage: 'windows-latest'
     jobs:
-      - job: Restore
-        displayName: 'Restore'
+      - job: CI
+        displayName: 'CI'
         dependsOn: [  ]
         steps:
           - checkout: self
@@ -40,77 +40,6 @@ stages:
               restoreKeys: $(Agent.OS) | nuget-packages
               path: $(USERPROFILE)/.nuget/packages
           - task: CmdLine@2
-            displayName: 'Run: Restore'
+            displayName: 'Run: Restore, Compile, Pack, CI'
             inputs:
-              script: './build.cmd Restore --skip'
-      - job: Compile
-        displayName: 'Compile'
-        dependsOn: [ Restore ]
-        steps:
-          - checkout: self
-            lfs: true
-          - task: Cache@2
-            displayName: 'Cache: nuke-temp'
-            inputs:
-              key: $(Agent.OS) | nuke-temp | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuke-temp
-              path: .nuke/temp
-          - task: Cache@2
-            displayName: 'Cache: nuget-packages'
-            inputs:
-              key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(USERPROFILE)/.nuget/packages
-          - task: CmdLine@2
-            displayName: 'Run: Compile'
-            inputs:
-              script: './build.cmd Compile --skip'
-      - job: Pack
-        displayName: 'Pack'
-        dependsOn: [ Compile ]
-        steps:
-          - checkout: self
-            lfs: true
-          - task: Cache@2
-            displayName: 'Cache: nuke-temp'
-            inputs:
-              key: $(Agent.OS) | nuke-temp | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuke-temp
-              path: .nuke/temp
-          - task: Cache@2
-            displayName: 'Cache: nuget-packages'
-            inputs:
-              key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(USERPROFILE)/.nuget/packages
-          - task: CmdLine@2
-            displayName: 'Run: Pack'
-            inputs:
-              script: './build.cmd Pack --skip'
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish: nuget'
-            inputs:
-              artifactName: nuget
-              pathToPublish: 'bin/nuget'
-      - job: CI
-        displayName: 'CI'
-        dependsOn: [ Compile, Pack ]
-        steps:
-          - checkout: self
-            lfs: true
-          - task: Cache@2
-            displayName: 'Cache: nuke-temp'
-            inputs:
-              key: $(Agent.OS) | nuke-temp | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuke-temp
-              path: .nuke/temp
-          - task: Cache@2
-            displayName: 'Cache: nuget-packages'
-            inputs:
-              key: $(Agent.OS) | nuget-packages | **/global.json, **/*.csproj, **/Directory.Packages.props
-              restoreKeys: $(Agent.OS) | nuget-packages
-              path: $(USERPROFILE)/.nuget/packages
-          - task: CmdLine@2
-            displayName: 'Run: CI'
-            inputs:
-              script: './build.cmd CI --skip'
+              script: './build.cmd Restore Compile Pack CI --skip'
